@@ -32,5 +32,6 @@
       };
       default = self.packages.${pkgs.system}.albyHub;
     });
+    nixosModules.default = import ./module.nix;
   };
 }
