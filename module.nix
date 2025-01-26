@@ -83,6 +83,18 @@ with lib; let
       default = null;
       description = "Esplora server to use instead of the default Alby esplora instance.";
     };
+
+    user = mkOption {
+      type = types.str;
+      default = "alby";
+      description = "The user as which to run albyhub.";
+    };
+
+    group = mkOption {
+      type = types.str;
+      default = cfg.user;
+      description = "The group as which to run albyhub.";
+    };
   };
 
   cfg = config.services.albyHub;
@@ -96,33 +108,34 @@ with lib; let
     ${optionalString (cfg.jwtSecret != null) "JWT_SECRET=${cfg.jwtSecret}"}
     ${optionalString (cfg.autoUnlockPassword != null) "AUTO_UNLOCK_PASSWORD=${cfg.autoUnlockPassword}"}
 
-    ${optionalString (cfg.ldkEsploraserver != null) "LDK_ESPLORA_SERVER=${cfg.ldkEsploraServer}"}
+    ${optionalString (cfg.ldkEsploraServer != null) "LDK_ESPLORA_SERVER=${cfg.ldkEsploraServer}"}
 
     ${optionalString (cfg.lnd.enable) "LN_BACKEND_TYPE=LND"}
     ${optionalString (cfg.lnd.address != null) "LND_ADDRESS=${cfg.lnd.address}"}
     ${optionalString (cfg.lnd.certPath != null) "LND_CERT_FILE=${cfg.lnd.certPath}"}
     ${optionalString (cfg.lnd.macaroonPath != null) "LND_MACAROON_FILE=${cfg.lnd.macaroonPath}"}
   '';
-in {
+in
+{
   inherit options;
 
   config = mkIf cfg.enable {
     systemd.services.albyhub = rec {
       wantedBy = [ "multi-user.target" ];
-      after = ["network-online.target"];
-      wants = ["network-online.target"];
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
       preStart = ''
-        install ${configFile} ${cfg.workDir}/.env
+        install -o '${cfg.user}' -g '${cfg.group}' -m 640 ${configFile} ${cfg.workDir}/.env
       '';
       serviceConfig = {
         Type = "simple";
+        User = cfg.user;
+        Group = cfg.group;
         ExecStart = "${cfg.package}/bin/alby-hub";
         Restart = "always";
         RestartSec = "1s";
+        EnvironmentFile = "${cfg.workDir}/.env";
       };
-    environment = {
-      PORT = "${toString cfg.port}";
-    };
     };
   };
 }
