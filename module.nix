@@ -23,7 +23,7 @@ with lib; let
     jwtSecret = mkOption {
       type = types.nullOr types.str;
       default = null;
-      description = "JWT secret string (required in HTTP mode)";
+      description = "JWT secret string. If not provided, a random one will be generated at runtime.";
     };
 
     databaseUri = mkOption {
